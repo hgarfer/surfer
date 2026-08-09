@@ -2,14 +2,10 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import { rawConfig } from '../utils/config'
-import { firefox } from './firefox'
-import { thunderbird } from './thunderbird'
+import { engines } from './registry'
 import { EngineId, EngineProfile } from './types'
 
-export const engines: Record<EngineId, EngineProfile> = {
-  firefox,
-  thunderbird,
-}
+export { engines } from './registry'
 
 export function isEngine(id: string): id is EngineId {
   return id in engines

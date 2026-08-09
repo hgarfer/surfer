@@ -8,6 +8,7 @@ import {
   getConfig,
   hasConfig,
   rawConfig,
+  setMockRawConfig,
 } from './config'
 
 export function preserveExistingConfig(): void {
@@ -82,5 +83,34 @@ describe('getConfig', () => {
     writeFileSync(configPath, '{"version": {"product": "invalid"}}')
     expect(() => getConfig()).toThrow()
     unlinkSync(configPath)
+  })
+})
+
+describe('engine field', () => {
+  preserveExistingConfig()
+
+  test('defaults to firefox when absent', () => {
+    setMockRawConfig(JSON.stringify({ name: 'x' }))
+    expect(getConfig().engine).toBe('firefox')
+  })
+
+  test('accepts thunderbird', () => {
+    setMockRawConfig(JSON.stringify({ engine: 'thunderbird' }))
+    expect(getConfig().engine).toBe('thunderbird')
+  })
+
+  test('rejects unknown engine', () => {
+    setMockRawConfig(JSON.stringify({ engine: 'netscape' }))
+    expect(() => getConfig()).toThrow()
+  })
+
+  test('rejects firefox products under thunderbird engine', () => {
+    setMockRawConfig(
+      JSON.stringify({
+        engine: 'thunderbird',
+        version: { product: 'firefox' },
+      })
+    )
+    expect(() => getConfig()).toThrow()
   })
 })

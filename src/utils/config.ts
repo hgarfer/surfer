@@ -10,6 +10,8 @@ import { join } from 'node:path'
 import { BIN_NAME } from '../constants'
 
 import { log } from '../log'
+import { engines } from '../engines/registry'
+import type { EngineId } from '../engines/types'
 
 export const projectDirectory = process.cwd()
 export const configPath = join(projectDirectory, 'surfer.json')
@@ -23,14 +25,6 @@ export enum SupportedProducts {
   FirefoxBeta = 'firefox-beta',
   FirefoxNightly = 'firefox-nightly',
 }
-
-export const validProducts = [
-  SupportedProducts.Firefox,
-  SupportedProducts.FirefoxESR,
-  SupportedProducts.FirefoxDevelopment,
-  SupportedProducts.FirefoxBeta,
-  SupportedProducts.FirefoxNightly,
-]
 
 export interface LicenseConfig {
   /**
@@ -112,6 +106,11 @@ export interface Config {
    */
   binaryName: string
   /**
+   * Which Mozilla application this project forks: 'firefox' (default) or
+   * 'thunderbird'.
+   */
+  engine?: EngineId
+  /**
    * The license check config
    */
   license: LicenseConfig
@@ -164,6 +163,7 @@ export const defaultConfig: Config = {
   vendor: 'Unknown',
   appId: 'unknown.appid',
   binaryName: 'firefox',
+  engine: 'firefox',
   version: {
     product: SupportedProducts.Firefox,
   },
@@ -230,6 +230,8 @@ export function getConfig(): Config {
   }
 
   // Merge the default config with the file parsed config
+  const declaredProduct = (fileParsed as { version?: { product?: string } })
+    .version?.product
   fileParsed = { ...defaultConfig, ...fileParsed }
 
   fileParsed.license = { ...defaultLicenseConfig, ...fileParsed.license }
@@ -237,8 +239,26 @@ export function getConfig(): Config {
   // ===========================================================================
   // Config Validation
 
-  if (!validProducts.includes(fileParsed.version.product)) {
-    log.error(`${fileParsed.version.product} is not a valid product`)
+  const configuredEngine = (fileParsed.engine || 'firefox') as string
+
+  if (!(configuredEngine in engines)) {
+    log.error(
+      `The engine "${configuredEngine}" is not supported. Valid engines: ${Object.keys(engines).join(', ')}`
+    )
+    process.exit(1)
+  }
+
+  const engineProfile = engines[configuredEngine as EngineId]
+
+  if (declaredProduct === undefined) {
+    // Default the product to the engine when the config omits it
+    fileParsed.version.product = configuredEngine as SupportedProducts
+  }
+
+  if (!engineProfile.products.includes(fileParsed.version.product)) {
+    log.error(
+      `${fileParsed.version.product} is not a valid product for the ${configuredEngine} engine`
+    )
     process.exit(1)
   }
 
