@@ -6,6 +6,7 @@ import { engines } from './registry'
 import { EngineId, EngineProfile } from './types'
 
 export { engines } from './registry'
+export type { EngineId, EngineProfile } from './types'
 
 export function isEngine(id: string): id is EngineId {
   return id in engines
