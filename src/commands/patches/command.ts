@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs'
 import glob from 'tiny-glob'
 
 import { ENGINE_DIR, PATCHES_DIR, SRC_DIR } from '../../constants'
+import { getEngine } from '../../engines'
 import * as gitPatch from './git-patch'
 import * as copyPatch from './copy-patches'
 import * as brandingPatch from './branding-patch'
@@ -57,7 +58,7 @@ function importMelonPatches(): Task {
           if (
             (await logoCheck) &&
             (await macosInstallerCheck) &&
-            existsSync(join(ENGINE_DIR, 'browser/branding', name))
+            existsSync(join(brandingPatch.brandingStoreDir(getEngine()), name))
           ) {
             return true
           }
