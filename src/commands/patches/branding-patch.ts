@@ -129,6 +129,7 @@ async function setupImages(configPath: string, outputPath: string) {
   await every([16, 22, 24, 32, 48, 64, 128, 256, 512], async (size) => {
     const logoPath = join(configPath, `logo${size}.png`)
     if (!filesExist([logoPath])) {
+      if (getEngine().id !== 'thunderbird') throw new Error(`Missing logo${size}.png`)
       log.warning(
         `Missing ${logoPath}; falling back to tree seed for default${size}.png`
       )
