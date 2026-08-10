@@ -5,12 +5,17 @@ import execa from 'execa'
 
 import { bin_name } from '..'
 import { ENGINE_DIR } from '../constants'
+import { getEngine } from '../engines'
 import { log } from '../log'
 
 export const reset = async (): Promise<void> => {
-  log.warning(`This will remove any changes that you have made to firefox`)
+  const engine = getEngine()
+
   log.warning(
-    `If you have made changes to firefox's internal files, save them with |${bin_name} export [filename]|`
+    `This will remove any changes that you have made to ${engine.name}`
+  )
+  log.warning(
+    `If you have made changes to ${engine.name}'s internal files, save them with |${bin_name} export [filename]|`
   )
   await log.hardWarning(
     `You will need to run |${bin_name} import| to bring back your saved changes`

@@ -199,8 +199,9 @@ export async function downloadInternals({
 }) {
   // Provide a legible error if there is no version specified
   if (!version) {
+    const engine = getEngine()
     log.error(
-      `You have not specified a version of ${getEngine().name} in your config file. This is required to build a ${getEngine().name} fork.`
+      `You have not specified a version of ${engine.name} in your config file. This is required to build a ${engine.name} fork.`
     )
     process.exit(1)
   }

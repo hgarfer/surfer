@@ -5,6 +5,9 @@
 /* eslint-disable unicorn/no-await-expression-member */
 
 import { Cmd } from './types'
+import { getEngine } from './engines'
+
+const engine = getEngine()
 
 export const commands: Cmd[] = [
   {
@@ -76,7 +79,7 @@ export const commands: Cmd[] = [
   },
   {
     cmd: 'download',
-    description: 'Download Firefox.',
+    description: `Download ${engine.name}.`,
     options: [
       {
         arg: '--force',
@@ -89,7 +92,7 @@ export const commands: Cmd[] = [
   {
     cmd: 'update',
     aliases: ['update-ff'],
-    description: 'Update Firefox to latest version.',
+    description: `Update ${engine.name} to latest version.`,
     requestController: async () => (await import('./commands/update')).update,
     disableMiddleware: true,
   },
@@ -115,12 +118,12 @@ export const commands: Cmd[] = [
   {
     cmd: 'ff-init <source>',
     aliases: ['ff-initialise', 'ff-initialize'],
-    description: 'Initialise the Firefox directory.',
+    description: `Initialise the ${engine.name} directory.`,
     requestController: async () => (await import('./commands/init')).init,
   },
   {
     cmd: 'ff-version',
-    description: 'Retrieves the version of firefox to build against',
+    description: `Retrieves the version of ${engine.name} to build against`,
     requestController: async () =>
       (await import('./commands/ff-version')).getFFVersion,
   },
@@ -146,7 +149,7 @@ export const commands: Cmd[] = [
   },
   {
     cmd: 'reset',
-    description: 'Reset the source directory to stock Firefox.',
+    description: `Reset the source directory to stock ${engine.name}.`,
     requestController: async () => (await import('./commands/reset')).reset,
   },
   {

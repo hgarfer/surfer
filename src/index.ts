@@ -24,6 +24,7 @@ import {
 } from './utils'
 import { commands } from './cmds'
 import { BIN_NAME, ENGINE_DIR } from './constants'
+import { getEngine } from './engines'
 import { updateCheck } from './middleware/update-check'
 import { registerCommand } from './middleware/register-command'
 import { log } from './log'
@@ -39,9 +40,14 @@ const program = new Command()
 
 let reportedFFVersion
 
-if (existsSync(resolve(ENGINE_DIR, 'browser', 'config', 'version.txt'))) {
+const engine = getEngine()
+const [versionCheckPath] = engine.versionCheckPaths
+if (
+  versionCheckPath &&
+  existsSync(resolve(ENGINE_DIR, ...versionCheckPath.split('/')))
+) {
   const version = readFileSync(
-    resolve(ENGINE_DIR, 'browser', 'config', 'version.txt')
+    resolve(ENGINE_DIR, ...versionCheckPath.split('/'))
   )
     .toString()
     .replace(/\n/g, '')
@@ -72,14 +78,14 @@ program
     versionFormatter([
       ...programVersions,
       {
-        name: 'Firefox',
+        name: engine.name,
         value: `${config.version.version} ${
           reportedFFVersion ? `(being reported as ${reportedFFVersion})` : ''
         }`,
       },
       { name: 'Surfer', value: surferVersion },
       reportedFFVersion
-        ? `Mismatch detected between expected Firefox version and the actual version.\nYou may have downloaded the source code using a different version and\nthen switched to another branch.`
+        ? `Mismatch detected between expected ${engine.name} version and the actual version.\nYou may have downloaded the source code using a different version and\nthen switched to another branch.`
         : '',
     ])
   )
