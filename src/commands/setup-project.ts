@@ -156,7 +156,7 @@ export async function setupProject(): Promise<void> {
     log.success(
       'Project setup complete!',
       '',
-      `You can start downloading the Firefox source code by running |${BIN_NAME} download|`,
+      `You can start downloading the ${engine.name} source code by running |${BIN_NAME} download|`,
       'Or you can follow the getting started guide at https://docs.surfer.dev/getting-started/overview/'
     )
   } catch (error) {

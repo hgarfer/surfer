@@ -27,6 +27,11 @@ describe('engine registry', () => {
     expect(isEngine('thunderbird')).toBe(true)
     expect(isEngine('netscape')).toBe(false)
   })
+
+  test('getEngineById resolves both engines', () => {
+    expect(getEngineById('firefox').name).toBe('Firefox')
+    expect(getEngineById('thunderbird').name).toBe('Thunderbird')
+  })
 })
 
 describe('firefox profile (regression lock)', () => {

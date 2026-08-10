@@ -18,7 +18,6 @@ export const internalMozconfg = (
 ) => {
   const cfg = deps.config ?? config
   const engine = deps.engine ?? getEngine()
-  const brandName = deps.currentBrandName ?? getCurrentBrandName()
 
   let buildOptions = `# Unknown build mode ${buildMode}`
 
@@ -88,7 +87,9 @@ export MOZ_APPUPDATE_HOST=${
       ? `
 
 # MacOS specific settings
-export MOZ_MACBUNDLE_NAME="${brandName}.app"
+export MOZ_MACBUNDLE_NAME="${
+          deps.currentBrandName ?? getCurrentBrandName()
+        }.app"
   `
       : '')
   )
