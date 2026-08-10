@@ -3,17 +3,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import axios from 'axios'
 import { log } from '../log'
-import { SupportedProducts } from './config'
-import { config } from '..'
+import { getEngine } from '../engines'
+import { config } from './config'
 import { dynamicConfig } from '.'
-
-const firefoxTargets = JSON.parse(`{
-  "${SupportedProducts.Firefox}": "LATEST_FIREFOX_VERSION",
-  "${SupportedProducts.FirefoxBeta}": "LATEST_FIREFOX_DEVEL_VERSION",
-  "${SupportedProducts.FirefoxDevelopment}": "FIREFOX_DEVEDITION",
-  "${SupportedProducts.FirefoxESR}": "FIREFOX_ESR",
-  "${SupportedProducts.FirefoxNightly}": "FIREFOX_NIGHTLY"
-}`)
 
 export const shouldUseCandidate = (): boolean => {
   const brandingKey = dynamicConfig.get('brand')
@@ -30,19 +22,24 @@ export const getFFVersionOrCandidate = () => {
     : config.version.version
 }
 
-export const getLatestFF = async (
-  product: SupportedProducts = SupportedProducts.Firefox
+export const getLatestVersion = async (
+  product: string = config.version.product
 ): Promise<string> => {
+  const engine = getEngine()
+  const targetKey = engine.versionTargets[product]
+  if (!targetKey) {
+    log.error(`${product} is not a valid product for the ${engine.name} engine`)
+    return ''
+  }
   try {
-    const { data } = await axios.get(
-      'https://product-details.mozilla.org/1.0/firefox_versions.json'
-    )
-
-    return data[firefoxTargets[product]]
+    const { data } = await axios.get(engine.versionEndpoint)
+    return data[targetKey]
   } catch (error) {
-    log.warning('Failed to get latest firefox version with error:')
+    log.warning(`Failed to get latest ${engine.name} version with error:`)
     log.error(error)
-
     return ''
   }
 }
+
+/** Backwards-compatible alias for the renamed getLatestVersion. */
+export const getLatestFF = getLatestVersion

@@ -13,7 +13,7 @@ import {
   Config,
   configPath,
   delay,
-  getLatestFF,
+  getLatestVersion,
   projectDirectory,
   SupportedProducts,
   walkDirectory,
@@ -74,7 +74,7 @@ export async function setupProject(): Promise<void> {
 
     if (typeof product === 'undefined') return
 
-    const productVersion = await getLatestFF(product)
+    const productVersion = await getLatestVersion(product)
 
     const { version, name, appId, vendor, ui, binaryName } = await prompts([
       {
