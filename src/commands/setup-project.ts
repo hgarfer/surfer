@@ -64,7 +64,7 @@ export async function setupProject(): Promise<void> {
 
     if (typeof product === 'undefined') return
 
-    const productVersion = await getLatestVersion(product)
+    const productVersion = await getLatestVersion(product, engine)
 
     const { version, name, appId, vendor, ui, binaryName } = await prompts([
       {

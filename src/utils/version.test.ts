@@ -4,6 +4,7 @@
 import axios from 'axios'
 import { getLatestVersion } from './version'
 import { getEngine } from '../engines'
+import { thunderbird } from '../engines/thunderbird'
 import { setMockRawConfig } from './config'
 
 jest.mock('axios')
@@ -14,15 +15,32 @@ describe('latest version resolution', () => {
 
   test('hits firefox endpoint for firefox product', async () => {
     setMockRawConfig(JSON.stringify({ engine: 'firefox' }))
-    mockedAxios.get.mockResolvedValue({ data: { LATEST_FIREFOX_VERSION: '137.0' } })
+    mockedAxios.get.mockResolvedValue({
+      data: { LATEST_FIREFOX_VERSION: '137.0' },
+    })
     await expect(getLatestVersion('firefox')).resolves.toBe('137.0')
     expect(mockedAxios.get).toHaveBeenCalledWith(getEngine().versionEndpoint)
   })
 
   test('hits thunderbird endpoint for thunderbird-esr', async () => {
     setMockRawConfig(JSON.stringify({ engine: 'thunderbird' }))
-    mockedAxios.get.mockResolvedValue({ data: { THUNDERBIRD_ESR: '140.13.0esr' } })
-    await expect(getLatestVersion('thunderbird-esr')).resolves.toBe('140.13.0esr')
+    mockedAxios.get.mockResolvedValue({
+      data: { THUNDERBIRD_ESR: '140.13.0esr' },
+    })
+    await expect(getLatestVersion('thunderbird-esr')).resolves.toBe(
+      '140.13.0esr'
+    )
     expect(mockedAxios.get).toHaveBeenCalledWith(getEngine().versionEndpoint)
+  })
+
+  test('honors an explicitly passed engine regardless of loaded config', async () => {
+    setMockRawConfig(JSON.stringify({ engine: 'firefox' }))
+    mockedAxios.get.mockResolvedValue({
+      data: { THUNDERBIRD_ESR: '140.13.0esr' },
+    })
+    await expect(
+      getLatestVersion('thunderbird-esr', thunderbird)
+    ).resolves.toBe('140.13.0esr')
+    expect(mockedAxios.get).toHaveBeenCalledWith(thunderbird.versionEndpoint)
   })
 })

@@ -3,7 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import axios from 'axios'
 import { log } from '../log'
-import { getEngine } from '../engines'
+import { EngineProfile, getEngine } from '../engines'
 import { config } from './config'
 import { dynamicConfig } from '.'
 
@@ -23,9 +23,9 @@ export const getFFVersionOrCandidate = () => {
 }
 
 export const getLatestVersion = async (
-  product: string = config.version.product
+  product: string = config.version.product,
+  engine: EngineProfile = getEngine()
 ): Promise<string> => {
-  const engine = getEngine()
   const targetKey = engine.versionTargets[product]
   if (!targetKey) {
     log.error(`${product} is not a valid product for the ${engine.name} engine`)
