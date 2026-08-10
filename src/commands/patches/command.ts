@@ -115,8 +115,9 @@ async function importCertPatches(): Promise<Task> {
   return {
     name: `Apply cert patches`,
     task: async () => {
+      const engine = getEngine()
       const files = {
-        'engine/browser/installer/windows/nsis/defines.nsi.in': [
+        [`engine/${engine.nsisDefinesPath}`]: [
           [
             `!define CERTIFICATE_NAME            "${mozillaName}"`,
             `!define CERTIFICATE_NAME            "${name}"`,
@@ -142,18 +143,15 @@ async function importCertPatches(): Promise<Task> {
             ],
           ],
       }
-      // Add branding.nsi browser/branding/<<x>>
-      const brandingFiles = await glob('browser/branding/*/branding.nsi', {
+      // Add branding.nsi engine-specific brand dirs
+      const brandingFiles = await glob(`${engine.brandingPath}/*/branding.nsi`, {
         filesOnly: true,
         cwd: ENGINE_DIR,
       })
       for (const file of brandingFiles) {
-        const brandName =
-          process.platform === 'win32'
-            ? file.split('\\')[2]
-            : file.split('/')[2]
+        const dir = file.split(/[\\/]/).slice(0, -1).join('/')
         files[
-          `engine/browser/branding/${brandName}/branding.nsi` as keyof typeof files
+          `engine/${dir}/branding.nsi` as keyof typeof files
         ] = [
           [
             `!define CertNameDownload   "${mozillaName}"`,
