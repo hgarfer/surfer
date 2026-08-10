@@ -6,6 +6,13 @@ import { copyFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 
 import prompts from 'prompts'
+import {
+  engines,
+  EngineId,
+  EngineProfile,
+  getEngine,
+  getEngineById,
+} from '../engines'
 import { BIN_NAME } from '../constants'
 
 import { log } from '../log'
@@ -15,7 +22,6 @@ import {
   delay,
   getLatestVersion,
   projectDirectory,
-  SupportedProducts,
   walkDirectory,
 } from '../utils'
 
@@ -37,39 +43,23 @@ export async function setupProject(): Promise<void> {
     }
 
     // Ask user for assorted information
+    let engine: EngineProfile = getEngine()
+    if (!existsSync(configPath)) {
+      const { engine: engineChoice } = await prompts({
+        type: 'select',
+        name: 'engine',
+        message: 'Select an engine to fork',
+        choices: buildEngineChoices(),
+      })
+      if (typeof engineChoice === 'undefined') return
+      engine = getEngineById(engineChoice as EngineId)
+    }
+
     const { product } = await prompts({
       type: 'select',
       name: 'product',
       message: 'Select a product to fork',
-      choices: [
-        {
-          title: 'Firefox stable',
-          description: 'Releases around every 4 weeks, fairly stable',
-          value: SupportedProducts.Firefox,
-        },
-        {
-          title: 'Firefox extended support (older)',
-          description:
-            'The extended support version of Firefox. Will receive security updates for a longer period of time and less frequent, bigger, feature updates',
-          value: SupportedProducts.FirefoxESR,
-        },
-        {
-          title: 'Firefox developer edition (Not recommended)',
-          description: 'Tracks firefox beta, with a few config tweaks',
-          value: SupportedProducts.FirefoxDevelopment,
-        },
-        {
-          title: 'Firefox beta (Not recommended)',
-          description: 'Updates every 4 weeks. It will have unresolved bugs',
-          value: SupportedProducts.FirefoxBeta,
-        },
-        {
-          title: 'Firefox Nightly (Not recommended)',
-          description:
-            'Updates daily, with many bugs. Practically impossible to track',
-          value: SupportedProducts.FirefoxNightly,
-        },
-      ],
+      choices: buildProductChoices(engine),
     })
 
     if (typeof product === 'undefined') return
@@ -135,6 +125,7 @@ export async function setupProject(): Promise<void> {
       vendor,
       appId,
       binaryName,
+      engine: engine.id,
       version: { product, version },
       buildOptions: {
         windowsUseSymbolicLinks: false,
@@ -144,7 +135,7 @@ export async function setupProject(): Promise<void> {
     await copyRequired()
 
     if (ui === 'uc') {
-      await copyOptional(['browser/themes'])
+      await copyOptional([engine.uiThemeDir])
     }
 
     writeFileSync(configPath, JSON.stringify(config, undefined, 2))
@@ -171,6 +162,83 @@ export async function setupProject(): Promise<void> {
   } catch (error) {
     log.error(error)
   }
+}
+
+// =============================================================================
+// Prompt choice builders
+
+/**
+ * Title and description shown for each product in the product select. Kept as
+ * a static map because products are plain IDs in the engine profiles.
+ */
+const productMeta: Record<string, { title: string; description: string }> = {
+  firefox: {
+    title: 'Firefox stable',
+    description: 'Releases around every 4 weeks, fairly stable',
+  },
+  'firefox-esr': {
+    title: 'Firefox extended support (older)',
+    description:
+      'The extended support version of Firefox. Will receive security updates for a longer period of time and less frequent, bigger, feature updates',
+  },
+  'firefox-dev': {
+    title: 'Firefox developer edition (Not recommended)',
+    description: 'Tracks firefox beta, with a few config tweaks',
+  },
+  'firefox-beta': {
+    title: 'Firefox beta (Not recommended)',
+    description: 'Updates every 4 weeks. It will have unresolved bugs',
+  },
+  'firefox-nightly': {
+    title: 'Firefox Nightly (Not recommended)',
+    description:
+      'Updates daily, with many bugs. Practically impossible to track',
+  },
+  thunderbird: {
+    title: 'Thunderbird stable',
+    description: 'Releases alongside Firefox — new features, same cadence',
+  },
+  'thunderbird-esr': {
+    title: 'Thunderbird extended support (older)',
+    description: 'Extended support; security updates, larger feature updates',
+  },
+  'thunderbird-beta': {
+    title: 'Thunderbird beta (Not recommended)',
+    description: 'Pre-release',
+  },
+  'thunderbird-nightly': {
+    title: 'Thunderbird Nightly (Not recommended)',
+    description: 'Daily builds, many bugs',
+  },
+}
+
+/**
+ * Build the engine select choices, one per registered engine. Exported so it
+ * can be unit tested.
+ */
+export function buildEngineChoices(): {
+  title: string
+  description: string
+  value: EngineId
+}[] {
+  return Object.values(engines).map((engine) => ({
+    title: engine.name,
+    description: `Fork the ${engine.name} source tree`,
+    value: engine.id,
+  }))
+}
+
+/**
+ * Build the product select choices for a given engine, mapping each product id
+ * to its static metadata. Exported so it can be unit tested.
+ */
+export function buildProductChoices(
+  engine: EngineProfile
+): { title: string; description: string; value: string }[] {
+  return engine.products.map((product) => {
+    const meta = productMeta[product] ?? { title: product, description: '' }
+    return { title: meta.title, description: meta.description, value: product }
+  })
 }
 
 // =============================================================================

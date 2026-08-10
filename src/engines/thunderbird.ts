@@ -35,4 +35,5 @@ export const thunderbird: EngineProfile = {
     'thunderbird-beta': 'LATEST_THUNDERBIRD_DEVEL_VERSION',
     'thunderbird-nightly': 'LATEST_THUNDERBIRD_NIGHTLY_VERSION',
   },
+  uiThemeDir: 'mail/themes',
 }

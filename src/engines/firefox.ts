@@ -37,4 +37,5 @@ export const firefox: EngineProfile = {
     'firefox-esr': 'FIREFOX_ESR',
     'firefox-nightly': 'FIREFOX_NIGHTLY',
   },
+  uiThemeDir: 'browser/themes',
 }

@@ -48,4 +48,9 @@ export interface EngineProfile {
   versionEndpoint: string
   /** Maps product id -> key in the versionEndpoint JSON. */
   versionTargets: Record<string, string>
+  /**
+   * Theme tree for the userChrome (uc) optional template target, relative to
+   * tree root, e.g. 'browser/themes'.
+   */
+  uiThemeDir: string
 }
