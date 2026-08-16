@@ -36,4 +36,5 @@ export const thunderbird: EngineProfile = {
     'thunderbird-nightly': 'LATEST_THUNDERBIRD_NIGHTLY_VERSION',
   },
   uiThemeDir: 'mail/themes',
+  bootstrapApplicationChoice: 'browser',
 }
