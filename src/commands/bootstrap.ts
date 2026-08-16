@@ -4,13 +4,18 @@
 
 import { config } from '..'
 import { ENGINE_DIR } from '../constants'
+import { getEngine } from '../engines'
 import { log } from '../log'
 import { configDispatch } from '../utils'
 
 export const bootstrap = async () => {
+  const engine = getEngine()
   log.info(`Bootstrapping ${config.name}...`)
 
-  const arguments_ = ['--application-choice', 'browser']
+  const arguments_: string[] = []
+  if (engine.bootstrapApplicationChoice) {
+    arguments_.push('--application-choice', engine.bootstrapApplicationChoice)
+  }
 
   console.debug(`Passing through to |mach bootstrap|`)
   await configDispatch('./mach', {

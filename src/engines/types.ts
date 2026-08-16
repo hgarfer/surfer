@@ -53,4 +53,10 @@ export interface EngineProfile {
    * tree root, e.g. 'browser/themes'.
    */
   uiThemeDir: string
+  /**
+   * Value passed to `./mach bootstrap --application-choice`. Omit (leave
+   * undefined) when mach should auto-detect the application from the
+   * mozconfig's `--enable-application` flag.
+   */
+  bootstrapApplicationChoice?: string
 }

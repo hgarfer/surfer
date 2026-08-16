@@ -38,4 +38,5 @@ export const firefox: EngineProfile = {
     'firefox-nightly': 'FIREFOX_NIGHTLY',
   },
   uiThemeDir: 'browser/themes',
+  bootstrapApplicationChoice: 'browser',
 }
