@@ -19,6 +19,8 @@ import pngToIco from 'png-to-ico'
 import asyncIcns from 'async-icns'
 
 import { compatMode, config } from '../..'
+import { getEngine } from '../../engines'
+import { EngineProfile } from '../../engines/types'
 import { CONFIGS_DIR, ENGINE_DIR, MELON_TMP_DIR } from '../../constants'
 import { log } from '../../log'
 import {
@@ -35,19 +37,44 @@ import { templateDirectory } from '../setup-project'
 import { IMelonPatch } from './command'
 
 // =============================================================================
-// Pure constants
+// Pure helpers
 
 export const BRANDING_DIR = join(CONFIGS_DIR, 'branding')
-const BRANDING_STORE = join(ENGINE_DIR, 'browser', 'branding')
-const BRANDING_FF = join(BRANDING_STORE, 'unofficial')
-const SHARED_NSH = join(
-  ENGINE_DIR,
-  'browser',
-  'installer',
-  'windows',
-  'nsis',
-  'shared.nsh'
-)
+
+export function brandingStoreDir(
+  engine: EngineProfile,
+  engineDir: string = ENGINE_DIR
+): string {
+  return join(engineDir, engine.brandingPath)
+}
+
+export function defaultBrandSourceDir(
+  engine: EngineProfile,
+  engineDir: string = ENGINE_DIR
+): string {
+  return join(brandingStoreDir(engine, engineDir), engine.defaultBrandDir)
+}
+
+export function brandingPrefPath(
+  engine: EngineProfile,
+  brandDir: string
+): string {
+  return join(brandDir, 'pref', engine.brandingPrefName)
+}
+
+export function computeAusBaseUrl(engine: EngineProfile): string {
+  return `URL=https://@MOZ_APPUPDATE_HOST@/updates/${engine.ausDirName}/%BUILD_TARGET%/%CHANNEL%/update.xml`
+}
+
+export function nsisSharedPath(
+  engine: EngineProfile,
+  engineDir: string = ENGINE_DIR
+): string {
+  return join(
+    engineDir,
+    engine.nsisDefinesPath.replace('defines.nsi.in', 'shared.nsh')
+  )
+}
 
 const REQUIRED_FILES = [
   'logo.png',
@@ -101,7 +128,13 @@ async function setupImages(configPath: string, outputPath: string) {
   // Firefox doesn't use 512 by 512, but we need it to generate ico files later
   await every([16, 22, 24, 32, 48, 64, 128, 256, 512], async (size) => {
     const logoPath = join(configPath, `logo${size}.png`)
-    if (!filesExist([logoPath])) throw new Error(`Missing logo${size}.png`)
+    if (!filesExist([logoPath])) {
+      if (getEngine().id !== 'thunderbird') throw new Error(`Missing logo${size}.png`)
+      log.warning(
+        `Missing ${logoPath}; falling back to tree seed for default${size}.png`
+      )
+      return true
+    }
 
     const outputPathLogo = join(outputPath, `default${size}.png`)
     await copyFile(logoPath, outputPathLogo)
@@ -189,9 +222,10 @@ async function copyMozFiles(
     brandingVendor: string
   }
 ) {
-  const firefoxBrandingDirectoryContents = await walkDirectory(BRANDING_FF)
+  const seedDir = defaultBrandSourceDir(getEngine())
+  const firefoxBrandingDirectoryContents = await walkDirectory(seedDir)
   const files = firefoxBrandingDirectoryContents.filter(
-    (file) => !existsSync(join(outputPath, file.replace(BRANDING_FF, '')))
+    (file) => !existsSync(join(outputPath, file.replace(seedDir, '')))
   )
 
   const css = files.filter((file) => extname(file).includes('css'))
@@ -203,7 +237,7 @@ async function copyMozFiles(
   for (const [contents, path] of css
     .map((filePath) => [
       readFileSync(filePath).toString(),
-      join(outputPath, filePath.replace(BRANDING_FF, '')),
+      join(outputPath, filePath.replace(seedDir, '')),
     ])
     .map(([contents, path]) => [
       contents.replace(CSS_REPLACE_REGEX, 'var(--theme-bg)') +
@@ -219,22 +253,19 @@ async function copyMozFiles(
     brandingNsis.length == 1,
     'There should only be one branding.nsi file'
   )
-  const outputBrandingNsis = join(
-    outputPath,
-    brandingNsis[0].replace(BRANDING_FF, '')
-  )
-  const configureProfileBrandingPath = join(
-    outputPath,
-    'pref',
-    'firefox-branding.js'
-  )
+  const outputBrandingNsis = join(outputPath, brandingNsis[0].replace(seedDir, ''))
+  const configureProfileBrandingPath = brandingPrefPath(getEngine(), outputPath)
   log.debug('Configuring branding.nsi into ' + outputBrandingNsis)
   configureBrandingNsis(outputBrandingNsis, brandingConfig)
 
   // Copy everything else from the default firefox branding directory
   for (const file of everythingElse) {
-    mkdirpSync(dirname(join(outputPath, file.replace(BRANDING_FF, ''))))
-    copyFileSync(file, join(outputPath, file.replace(BRANDING_FF, '')))
+    if (!filesExist([file])) {
+      log.warning(`Skipping missing seed asset: ${file}`)
+      continue
+    }
+    mkdirpSync(dirname(join(outputPath, file.replace(seedDir, ''))))
+    copyFileSync(file, join(outputPath, file.replace(seedDir, '')))
   }
 
   configureProfileBranding(configureProfileBrandingPath, brandingConfig)
@@ -257,7 +288,7 @@ export function get(): string[] {
 
 export async function apply(name: string): Promise<void> {
   const configPath = join(BRANDING_DIR, name)
-  const outputPath = join(BRANDING_STORE, name)
+  const outputPath = join(brandingStoreDir(getEngine()), name)
 
   checkForFaults(name, configPath)
 
@@ -360,15 +391,20 @@ function configureBrandingNsis(
 !define INSTALL_INSTALLING_TEXT_COLOR 0xFFFFFF
 `
   )
-  writeFileSync(
-    SHARED_NSH,
-    readFileSync(SHARED_NSH)
-      .toString()
-      .replace(
-        '"Publisher" "Mozilla"',
-        `"Publisher" "${brandingConfig.brandingVendor}"`
-      )
-  )
+  const sharedNsh = nsisSharedPath(getEngine())
+  if (existsSync(sharedNsh)) {
+    writeFileSync(
+      sharedNsh,
+      readFileSync(sharedNsh)
+        .toString()
+        .replace(
+          '"Publisher" "Mozilla"',
+          `"Publisher" "${brandingConfig.brandingVendor}"`
+        )
+    )
+  } else {
+    log.warning(`Skipping shared.nsh publisher patch: ${sharedNsh} does not exist`)
+  }
 }
 
 function addOptionalIcons(brandingPath: string, outputPath: string) {
@@ -434,7 +470,7 @@ pref("devtools.selfxss.count", 5);
 }
 
 function setUpdateURLs() {
-  const baseURL = `URL=https://@MOZ_APPUPDATE_HOST@/updates/browser/%BUILD_TARGET%/%CHANNEL%/update.xml`
+  const baseURL = computeAusBaseUrl(getEngine())
   const appIni = join(ENGINE_DIR, 'build', 'application.ini.in')
   const appIniContents = readFileSync(appIni).toString()
   const updatedAppIni = appIniContents.replace(/URL=.*update.xml/g, baseURL)

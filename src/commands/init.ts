@@ -3,10 +3,25 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import { Command } from 'commander'
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { bin_name } from '..'
 import { log } from '../log'
 import { config, configDispatch } from '../utils'
+import { EngineProfile } from '../engines/types'
+import { getEngine } from '../engines'
+
+export function resolveVersionDisplayPath(
+  engine: EngineProfile,
+  engineDir: string
+): string {
+  const cwd = process.cwd()
+  const absoluteEngineDir = resolve(cwd, engineDir)
+  for (const relative of engine.versionDisplayPaths) {
+    const candidate = join(absoluteEngineDir, relative)
+    if (existsSync(candidate)) return candidate
+  }
+  return join(absoluteEngineDir, engine.versionDisplayPaths[0])
+}
 
 export const init = async (directory: Command | string): Promise<void> => {
   const cwd = process.cwd()
@@ -19,15 +34,9 @@ export const init = async (directory: Command | string): Promise<void> => {
     )
   }
 
-  let version = readFileSync(
-    resolve(
-      cwd,
-      directory.toString(),
-      'browser',
-      'config',
-      'version_display.txt'
-    )
-  ).toString()
+  const engine = getEngine()
+  const versionFile = resolveVersionDisplayPath(engine, directory.toString())
+  let version = readFileSync(versionFile).toString()
 
   if (!version)
     log.error(
@@ -75,7 +84,7 @@ export const init = async (directory: Command | string): Promise<void> => {
   log.info('Committing...')
 
   await configDispatch('git', {
-    args: ['commit', '-aqm', `"Firefox ${version}"`],
+    args: ['commit', '-aqm', `"${getEngine().name} ${version}"`],
     cwd: absoluteInitDirectory,
     // Committing can fail for configuration issues: see https://github.com/zen-browser/desktop/issues/1877
     killOnError: true,

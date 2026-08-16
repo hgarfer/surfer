@@ -4,6 +4,7 @@ import { isMatch } from 'picomatch'
 
 import { config } from '../..'
 import { ENGINE_DIR, MELON_TMP_DIR } from '../../constants'
+import { getEngine } from '../../engines'
 import { log } from '../../log'
 
 import {
@@ -40,7 +41,7 @@ export async function resolveAddonDownloadUrl(
     case 'amo': {
       try {
         const mozillaData = await axios.get(
-          `https://addons.mozilla.org/api/v4/addons/addon/${addon.amoId}/versions/`
+          `${getEngine().addonApiBase}/addons/addon/${addon.amoId}/versions/`
         )
 
         return mozillaData.data.results[0].files[0].url

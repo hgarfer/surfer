@@ -3,17 +3,19 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import { bin_name, config } from '..'
 import { log } from '../log'
+import { getEngine } from '../engines'
 import { getLatestFF } from '../utils'
 
 export const updateCheck = async (): Promise<void> => {
-  const firefoxVersion = config.version.version
+  const engine = getEngine()
+  const engineVersion = config.version.version
 
   try {
     const version = await getLatestFF(config.version.product)
 
-    if (firefoxVersion && version !== firefoxVersion)
+    if (engineVersion && version !== engineVersion)
       log.warning(
-        `Latest version of Firefox (${version}) does not match frozen version (${firefoxVersion}). Update Firefox with the command |${bin_name} update|.`
+        `Latest version of ${engine.name} (${version}) does not match frozen version (${engineVersion}). Update ${engine.name} with the command |${bin_name} update|.`
       )
   } catch (error) {
     log.warning(`Failed to check for updates.`)
