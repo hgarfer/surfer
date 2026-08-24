@@ -74,16 +74,18 @@ function importMelonPatches(): Task {
 async function importFolders(): Promise<Task> {
   return patchMethod(
     'folder',
-    await copyPatch.get(),
+    existsSync(SRC_DIR) ? await copyPatch.get() : [],
     async (patch) => await copyPatch.apply(patch)
   )
 }
 
 async function importGitPatch(): Promise<Task> {
-  let patches = await glob('**/*.patch', {
-    filesOnly: true,
-    cwd: SRC_DIR,
-  })
+  let patches = existsSync(SRC_DIR)
+    ? await glob('**/*.patch', {
+        filesOnly: true,
+        cwd: SRC_DIR,
+      })
+    : []
   patches = patches.map((path) => join(SRC_DIR, path))
 
   await writeFile(patchCountFile, patches.length.toString())

@@ -83,10 +83,12 @@ export interface ICopyPatch extends IMelonPatch {
 // Exports
 
 export async function get(): Promise<ICopyPatch[]> {
-  const allFilesInSource = await glob('**/*', {
-    filesOnly: true,
-    cwd: SRC_DIR,
-  })
+  const allFilesInSource = existsSync(SRC_DIR)
+    ? await glob('**/*', {
+        filesOnly: true,
+        cwd: SRC_DIR,
+      })
+    : []
   const files = allFilesInSource.filter(
     (f) => !(f.endsWith('.patch') || f.split('/').includes('node_modules'))
   )
