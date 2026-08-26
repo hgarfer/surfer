@@ -111,6 +111,8 @@ async function importCertPatches(): Promise<Task> {
   const mozillaIssuer =
     'DigiCert Trusted G4 Code Signing RSA4096 SHA384 2021 CA1'
   const mozillaIssuerPrev = 'DigiCert SHA2 Assured ID Code Signing CA'
+  const namePrev = process.env.SURFER_CERT_PATCH_NAME_PREV || mozillaName
+  const issuerPrev = process.env.SURFER_CERT_PATCH_ISSUER_PREV || mozillaIssuer
   return {
     name: `Apply cert patches`,
     task: async () => {
@@ -125,8 +127,12 @@ async function importCertPatches(): Promise<Task> {
             `!define CERTIFICATE_ISSUER          "${issuer}"`,
           ],
           [
+            `!define CERTIFICATE_NAME_PREVIOUS   "${mozillaName}"`,
+            `!define CERTIFICATE_NAME_PREVIOUS   "${namePrev}"`,
+          ],
+          [
             `!define CERTIFICATE_ISSUER_PREVIOUS "${mozillaIssuerPrev}"`,
-            `!define CERTIFICATE_ISSUER_PREVIOUS "${mozillaIssuer}"`,
+            `!define CERTIFICATE_ISSUER_PREVIOUS "${issuerPrev}"`,
           ],
         ],
         'engine/toolkit/components/maintenanceservice/bootstrapinstaller/maintenanceservice_installer.nsi':
