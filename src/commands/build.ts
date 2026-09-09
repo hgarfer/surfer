@@ -7,6 +7,8 @@ import { join, resolve } from 'node:path'
 import { bin_name, config } from '..'
 import { BUILD_TARGETS, CONFIGS_DIR, ENGINE_DIR } from '../constants'
 import { internalMozconfg } from '../constants/mozconfig'
+import { getEngine } from '../engines'
+import { EngineProfile } from '../engines/types'
 import { log } from '../log'
 import { patchCheck } from '../middleware/patch-check'
 import {
@@ -102,14 +104,27 @@ const applyConfig = async (os: string) => {
       )
   })
 
-  // We need to install the browser display version inside of browser/config/version.txt
-  // and browser/config/version_display.txt
+  // We need to install the product version inside of the engine's real version
+  // files (browser/config/* for firefox, comm/mail/config/* for thunderbird)
   const brandingConfig: BrandInfo | undefined = config.brands[brandingKey]
   const version = brandingConfig?.release?.displayVersion || '1.0.0'
 
-  log.debug(`Writing ${version} to the browser version files`)
-  writeFileSync(join(ENGINE_DIR, 'browser/config/version.txt'), version)
-  writeFileSync(join(ENGINE_DIR, 'browser/config/version_display.txt'), version)
+  log.debug(`Writing ${version} to the engine version files`)
+  writeEngineVersionFiles(getEngine(), version)
+}
+
+export function writeEngineVersionFiles(
+  engine: EngineProfile,
+  version: string,
+  engineDir: string = ENGINE_DIR
+): string[] {
+  const targets = [engine.versionCheckPaths[0], engine.versionDisplayPaths[0]]
+    .filter(Boolean)
+    .map((p) => join(engineDir, p))
+  for (const target of targets) {
+    writeFileSync(target, version)
+  }
+  return targets
 }
 
 const genericBuild = async (

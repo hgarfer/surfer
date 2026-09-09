@@ -5,10 +5,12 @@ import { existsSync } from 'node:fs'
 import { log } from '../log'
 import { BIN_NAME, ENGINE_DIR } from '../constants'
 import { dispatch, hasConfig } from '../utils'
+import { getEngine } from '../engines'
 
 export const status = async (): Promise<void> => {
   const configExists = hasConfig()
   const engineExists = existsSync(ENGINE_DIR)
+  const engine = getEngine()
 
   if (!configExists && !engineExists) {
     log.info(
@@ -19,7 +21,9 @@ export const status = async (): Promise<void> => {
   }
 
   if (engineExists) {
-    log.info("The following changes have been made to firefox's source code")
+    log.info(
+      `The following changes have been made to ${engine.name}'s source code`
+    )
     await dispatch('git', ['diff'], ENGINE_DIR)
 
     return

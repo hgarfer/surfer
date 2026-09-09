@@ -4,14 +4,16 @@
 
 import { bin_name, config } from '..'
 import { log } from '../log'
+import { getEngine } from '../engines'
 import { downloadInternals } from './download/firefox'
-import { getLatestFF } from '../utils'
+import { getLatestVersion } from '../utils'
 
 export const update = async (): Promise<void> => {
-  const version = await getLatestFF(config.version.product)
+  const version = await getLatestVersion(config.version.product)
+  const engine = getEngine()
 
   if (version == config.version.version) {
-    log.error(`Firefox is already the latest version.`)
+    log.error(`${engine.name} is already the latest version.`)
     process.exit(1)
   }
 
@@ -20,7 +22,7 @@ export const update = async (): Promise<void> => {
   await downloadInternals({ version, force: true, isCandidate: false })
 
   log.success(
-    `Firefox has successfully been updated to ${version}.`,
+    `${engine.name} has successfully been updated to ${version}.`,
     `You should be ready to make changes to ${config.name}.`,
     '',
     `You should import the patches next, run |${bin_name} import|.`,

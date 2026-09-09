@@ -4,6 +4,7 @@
 
 import { bin_name, config } from '..'
 import { log } from '../log'
+import { getEngine } from '../engines'
 import { downloadInternals } from './download/firefox'
 
 type Options = {
@@ -12,11 +13,12 @@ type Options = {
 
 export const download = async (options: Options): Promise<void> => {
   const version = config.version.version
+  const engine = getEngine()
 
   // If gFFVersion isn't specified, provide legible error
   if (!version) {
     log.error(
-      'You have not specified a version of firefox in your config file. This is required to build a firefox fork'
+      `You have not specified a version of ${engine.name} in your config file. This is required to build a ${engine.name} fork`
     )
     process.exit(1)
   }
