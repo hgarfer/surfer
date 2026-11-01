@@ -10,7 +10,7 @@ import { dynamicConfig } from '.'
 export const shouldUseCandidate = (): boolean => {
   const brandingKey = dynamicConfig.get('brand')
   return (
-    brandingKey !== 'release' &&
+    (brandingKey !== 'release' || (process.env as any).SURFER_FORCE_CANDIDATE) &&
     config.version.candidate !== undefined &&
     config.version.version !== config.version.candidate
   )
